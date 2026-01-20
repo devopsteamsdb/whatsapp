@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Replica - Health</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/whatsapp-theme.css">
+    <style>
+        .health-card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .status-ok {
+            color: var(--wa-accent);
+        }
+
+        .status-err {
+            color: #dc3545;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: var(--wa-text-primary);
+        }
+
+        .info-value {
+            color: var(--wa-text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-item" title="Status/QR">
+                <i class="fas fa-qrcode"></i>
+            </a>
+            <a href="/chats.html" class="nav-item" title="Chats">
+                <i class="fas fa-comment-alt"></i>
+            </a>
+            <a href="/settings.html" class="nav-item" title="Settings">
+                <i class="fas fa-cog"></i>
+            </a>
+            <div class="nav-item active" title="Health">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <div class="nav-item" title="Profile">
+                <div class="user-avatar" style="width: 24px; height: 24px;"></div>
+            </div>
+        </nav>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div style="font-size: 20px; font-weight: bold; color: var(--wa-header-icon);">Health</div>
+            </div>
+            <div class="chat-list">
+                <div class="chat-item active">
+                    <div class="chat-avatar"><i class="fas fa-server"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">Server Status</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Area -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <div class="chat-header-name">System Health</div>
+            </div>
+
+            <div class="messages-container"
+                style="background-color: var(--wa-bg-default); padding: 40px; overflow-y: auto; display: block;">
+
+                <div id="loading" style="text-align: center; padding: 20px;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <div style="margin-top: 10px;">Checking system health...</div>
+                </div>
+
+                <div id="healthContent" class="health-card" style="display: none;">
+                    <div id="statusIcon" class="status-icon"></div>
+                    <h2 id="statusText" style="margin-bottom: 30px;"></h2>
+
+                    <div class="info-row">
+                        <span class="info-label">WhatsApp State</span>
+                        <span id="waState" class="info-value">...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Connected Number</span>
+                        <span id="waNumber" class="info-value">...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Platform</span>
+                        <span id="waPlatform" class="info-value">...</span>
+                    </div>
+                    <div class="info-row" style="border-bottom: none;">
+                        <span class="info-label">Last Checked</span>
+                        <span id="lastChecked" class="info-value">...</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchHealth);
+
+        async function fetchHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('healthContent').style.display = 'block';
+
+                const icon = document.getElementById('statusIcon');
+                const text = document.getElementById('statusText');
+
+                if (data.status) {
+                    icon.className = 'status-icon status-ok fas fa-check-circle';
+                    text.innerText = 'System Operational';
+                    text.style.color = 'var(--wa-accent)';
+                } else {
+                    icon.className = 'status-icon status-err fas fa-exclamation-circle';
+                    text.innerText = 'System Issues Detected';
+                    text.style.color = '#dc3545';
+                }
+
+                document.getElementById('waState').innerText = data.whatsappState;
+                document.getElementById('waNumber').innerText = data.session ? data.session.phoneNumber : 'Not Connected';
+                document.getElementById('waPlatform').innerText = data.session ? data.session.platform : '-';
+                document.getElementById('lastChecked').innerText = new Date(data.timestamp).toLocaleString();
+
+            } catch (error) {
+                console.error('Error fetching health:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('healthContent').style.display = 'block';
+                document.getElementById('statusIcon').className = 'status-icon status-err fas fa-times-circle';
+                document.getElementById('statusText').innerText = 'Connection Failed';
+            }
+        }
+    </script>
+</body>
+
+</html>

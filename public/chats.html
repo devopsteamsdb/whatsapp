@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Replica</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/whatsapp-theme.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-item" title="Status/QR">
+                <i class="fas fa-qrcode"></i>
+            </a>
+            <a href="/chats.html" class="nav-item active" title="Chats">
+                <i class="fas fa-comment-alt"></i>
+            </a>
+            <a href="/settings.html" class="nav-item" title="Settings">
+                <i class="fas fa-cog"></i>
+            </a>
+            <div class="nav-item" title="Profile">
+                <div class="user-avatar" style="width: 24px; height: 24px;"></div>
+            </div>
+        </nav>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-avatar"></div>
+                <div class="sidebar-actions">
+                    <i class="fas fa-circle-notch" title="Status"></i>
+                    <i class="fas fa-comment-dots" title="New Chat" onclick="startNewChat()"></i>
+                    <i class="fas fa-ellipsis-v" title="Menu"></i>
+                </div>
+            </div>
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search" style="color: var(--wa-text-secondary); margin-right: 10px;"></i>
+                    <input type="text" placeholder="Search or start new chat" id="searchInput">
+                </div>
+            </div>
+            <div class="chat-list" id="chatList">
+                <!-- Chat items will be injected here -->
+                <div style="text-align: center; padding: 20px; color: var(--wa-text-secondary);">
+                    Loading chats...
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-area" id="chatArea">
+            <!-- Placeholder (No chat selected) -->
+            <div class="placeholder-view" id="placeholderView">
+                <div style="font-size: 32px; margin-bottom: 20px;">
+                    <i class="fab fa-whatsapp" style="font-size: 80px; color: #d1d7db;"></i>
+                </div>
+                <h2>WhatsApp Web Replica</h2>
+                <p>Send and receive messages without keeping your phone online.</p>
+                <p>Use WhatsApp on up to 4 linked devices and 1 phone.</p>
+            </div>
+
+            <!-- Active Chat View -->
+            <div class="hidden" id="activeChatView" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="chat-header">
+                    <div class="chat-avatar" id="headerAvatar"></div>
+                    <div class="chat-header-info">
+                        <div class="chat-header-name" id="headerName">Select a contact</div>
+                        <div style="font-size: 12px; color: var(--wa-text-secondary);" id="headerStatus"></div>
+                    </div>
+                    <div class="sidebar-actions">
+                        <!-- Icons removed as requested -->
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will be injected here -->
+                </div>
+
+                <div class="input-area">
+                    <button class="icon-btn"><i class="far fa-smile"></i></button>
+                    <button class="icon-btn" onclick="triggerFileUpload()"><i class="fas fa-plus"></i></button>
+                    <input type="file" id="mediaInput" style="display: none;" onchange="handleFileUpload(this)">
+                    <div class="input-wrapper">
+                        <input type="text" id="messageInput" placeholder="Type a message">
+                    </div>
+                    <button class="icon-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"
+                            id="sendBtnIcon"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Modal for New Chat -->
+    <div id="newChatModal" class="hidden modal">
+        <div class="modal-content">
+            <h3>Start New Chat</h3>
+            <input type="text" id="newChatNumber" placeholder="Phone number (e.g. 1234567890)"
+                style="width: 100%; padding: 8px; margin: 10px 0;">
+            <div style="text-align: right;">
+                <button onclick="closeModal('newChatModal')">Cancel</button>
+                <button onclick="openNewChat()"
+                    style="background-color: var(--wa-header-bg); color: white; border: none; padding: 8px 16px; border-radius: 4px;">Open
+                    Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/chats.js"></script>
+</body>
+
+</html>

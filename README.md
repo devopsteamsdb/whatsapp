@@ -8,11 +8,14 @@ A modern WhatsApp HTTP API web application built with Node.js and whatsapp-web.j
 
 ## Features
 
-✨ **Modern Web Interface** - Beautiful dark mode UI with glassmorphism effects  
-🔐 **QR Code Authentication** - Easy WhatsApp Web login via QR code scanning  
-📨 **Send Messages** - Send WhatsApp messages through web UI or API  
-🔄 **Session Management** - Persistent sessions with automatic reconnection  
-🚀 **RESTful API** - Complete HTTP API for integration  
+✨ **Modern Web Interface** - Beautiful dark mode UI with glassmorphism effects
+✨ **WhatsApp Web Replica** - Full-featured web interface to view chats and messages
+✨ **Settings Dashboard** - Configure server port, session path, and integrations
+✨ **Message Forwarding** - Automatically forward incoming messages to an external API
+🔐 **QR Code Authentication** - Easy WhatsApp Web login via QR code scanning
+📨 **Send Messages** - Send WhatsApp messages through web UI or API
+🔄 **Session Management** - Persistent sessions with automatic reconnection
+🚀 **RESTful API** - Complete HTTP API for integration
 📱 **Responsive Design** - Works perfectly on desktop and mobile  
 
 ## Quick Start
@@ -50,9 +53,22 @@ http://localhost:3000
 
 ### Web Interface
 
-1. **Start Session**: Click "Start Session" button to initialize WhatsApp connection
-2. **Scan QR Code**: Use your WhatsApp mobile app to scan the displayed QR code
-3. **Send Messages**: Once connected, use the message form to send WhatsApp messages
+1. **Dashboard (Home)**:
+   - **Start Session**: Click "Start Session" button to initialize WhatsApp connection
+   - **Scan QR Code**: Use your WhatsApp mobile app to scan the displayed QR code
+   - **Send Messages**: Once connected, use the message form to send WhatsApp messages
+
+2. **Chats (WhatsApp Web Replica)**:
+   - Click the **Chat Bubble** icon in the left navigation bar.
+   - View your active chat list with unread counts.
+   - Click a chat to view full message history (displayed chronologically).
+   - Send text and media messages directly from the interface.
+
+3. **Settings**:
+   - Click the **Gear** icon in the left navigation bar.
+   - **Server Port**: Change the running port (requires restart).
+   - **Session Path**: Change the session storage directory (requires restart).
+   - **Message Forwarding**: Enter an **External API URL** to auto-forward incoming messages via JSON POST.
 
 ### API Endpoints
 
@@ -139,6 +155,69 @@ Content-Type: application/json
 POST /api/session/logout
 ```
 Logout and destroy the current session.
+
+### Message Receiver API
+
+#### Get Webhook Config
+```bash
+GET /api/webhook
+```
+View current webhook configuration.
+
+#### Configure Webhook
+```bash
+PUT /api/webhook
+Content-Type: application/json
+
+{
+  "enabled": true,
+  "url": "https://your-webhook-url.com/receive"
+}
+```
+Set up a webhook to receive real-time messages.
+
+#### Retrieve Messages
+```bash
+GET /api/messages/:phone
+```
+Get conversation history for a specific phone number. Supports `limit` query param (default: 50).
+
+#### Settings API
+
+##### Get Settings
+```bash
+GET /api/settings
+```
+Retrieves current server configuration.
+
+##### Update Settings
+```bash
+POST /api/settings
+Content-Type: application/json
+
+{
+  "PORT": 3001,
+  "SESSION_PATH": "./.wwebjs_auth",
+  "EXTERNAL_API_URL": "https://webhook.site/..."
+}
+```
+Updates configuration. Note that `PORT` and `SESSION_PATH` changes require a server restart.
+
+#### Health Check
+```bash
+GET /api/health
+```
+Returns system status.
+
+**Response:**
+```json
+{
+  "status": true,
+  "session": { "phoneNumber": "..." },
+  "whatsappState": "CONNECTED",
+  "timestamp": "..."
+}
+```
 
 ## Configuration
 

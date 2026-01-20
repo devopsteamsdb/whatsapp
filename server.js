@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const apiRoutes = require('./routes/api');
+const whatsappService = require('./services/whatsapp');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +12,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health Check Endpoint (Monitoring)
+app.get('/health-api.html', (req, res) => {
+    const status = whatsappService.getStatus();
+    res.json({
+        status: status.isReady && status.isAuthenticated,
+        session: status.sessionInfo,
+        whatsappState: status.isReady ? 'CONNECTED' : (status.isAuthenticated ? 'AUTHENTICATED' : 'DISCONNECTED'),
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -30,6 +42,5 @@ app.listen(PORT, () => {
 
     // Auto-initialize WhatsApp session on startup
     console.log('Auto-initializing WhatsApp session...');
-    const whatsappService = require('./services/whatsapp');
     whatsappService.initialize();
 });

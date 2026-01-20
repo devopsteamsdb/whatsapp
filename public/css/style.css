@@ -639,3 +639,49 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* App Layout & Navigation */
+.app-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.nav-bar {
+    width: 60px;
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+    border-right: 1px solid var(--border-color);
+    z-index: 200;
+}
+
+.nav-item {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 15px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    text-decoration: none;
+    font-size: 20px;
+}
+
+.nav-item:hover,
+.nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--accent-primary);
+}
+
+.main-viewport {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    height: 100vh;
+}

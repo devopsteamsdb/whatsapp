@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const geminiService = require('./gemini');
 const conversationMemory = require('./conversationMemory');
+const webhookService = require('./webhook');
 
 const CONFIG_FILE = path.join(__dirname, '..', 'bot-config.json');
 
@@ -124,10 +125,19 @@ class WhatsAppService {
         });
 
         this.client.on('message', async (message) => {
-            if (!this.botConfig.enabled) return;
+            console.log(`[Event] Message received from ${message.from} (fromMe: ${message.fromMe})`);
 
-            // Don't respond to own messages or group messages (optional)
+            // Don't respond to own messages
             if (message.fromMe) return;
+
+            // Forward message to external API if configured
+            console.log('Calling handleMessageForwarding...');
+            this.handleMessageForwarding(message);
+
+            if (!this.botConfig.enabled) {
+                console.log('Bot is disabled, skipping auto-response.');
+                return;
+            }
 
             // Check for special commands
             if (message.body.toLowerCase() === '/clear') {
@@ -170,6 +180,16 @@ class WhatsAppService {
                         console.error('Error downloading media:', mediaError);
                     }
                 }
+
+                // Send to Webhook (if enabled)
+                webhookService.sendWebhook({
+                    from: message.from,
+                    body: message.body,
+                    hasMedia: message.hasMedia,
+                    media: mediaData,
+                    timestamp: message.timestamp,
+                    pushname: message._data.notifyName
+                });
 
                 // Store the user's message in conversation memory (with a note for audio)
                 const storedContent = mediaData ? '[Audio Message]' : message.body;
@@ -216,7 +236,21 @@ class WhatsAppService {
                 formattedNumber = `${formattedNumber}@c.us`;
             }
 
-            const result = await this.client.sendMessage(formattedNumber, message);
+            // Get the valid WhatsApp ID for this number
+            // This verification helps ensure we're sending to a valid user
+            const numberId = await this.client.getNumberId(formattedNumber);
+            if (!numberId) {
+                throw new Error('This number is not registered on WhatsApp');
+            }
+
+            // Get the chat object explicitly - this helps avoid "markedUnread" errors
+            // by ensuring the chat is fully loaded before we try to send to it
+            const chat = await this.client.getChatById(numberId._serialized);
+            if (!chat) {
+                throw new Error('Could not establish chat with this number');
+            }
+
+            const result = await chat.sendMessage(message, { sendSeen: false });
             return {
                 success: true,
                 messageId: result.id.id,
@@ -224,6 +258,65 @@ class WhatsAppService {
             };
         } catch (error) {
             console.error('Error sending message:', error);
+            throw error;
+        }
+    }
+
+    async getChats() {
+        if (!this.isReady) {
+            throw new Error('Client is not ready');
+        }
+        const chats = await this.client.getChats();
+        return chats.map(chat => ({
+            id: chat.id._serialized,
+            name: chat.name || chat.id.user,
+            unreadCount: chat.unreadCount,
+            timestamp: chat.timestamp,
+            isGroup: chat.isGroup,
+            lastMessage: chat.lastMessage ? {
+                body: chat.lastMessage.body,
+                timestamp: chat.lastMessage.timestamp,
+                fromMe: chat.lastMessage.fromMe,
+                type: chat.lastMessage.type
+            } : null
+        }));
+    }
+
+    async getChatHistory(chatIdOrNumber, limit = 50) {
+        if (!this.isReady) {
+            throw new Error('Client is not ready');
+        }
+
+        try {
+            let chatId = chatIdOrNumber;
+            // Only format if it doesn't look like a valid ID
+            if (!chatId.includes('@')) {
+                chatId = chatId.replace(/[^\d]/g, '') + '@c.us';
+            }
+
+            console.log(`Fetching chat history for: ${chatId} (limit: ${limit})`);
+
+            const chat = await this.client.getChatById(chatId);
+            if (!chat) {
+                console.error(`Chat not found for ID: ${chatId}`);
+                throw new Error(`Chat not found for ${chatId}`);
+            }
+
+            console.log(`Chat found. Fetching messages...`);
+            const messages = await chat.fetchMessages({ limit: limit });
+            console.log(`Fetched ${messages.length} messages for ${chatId}`);
+
+            return messages.map(msg => ({
+                id: msg.id.id,
+                body: msg.body,
+                type: msg.type,
+                timestamp: msg.timestamp,
+                fromMe: msg.fromMe,
+                author: msg.author,
+                hasMedia: msg.hasMedia
+            }));
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
             throw error;
         }
     }
@@ -256,7 +349,8 @@ class WhatsAppService {
             // Send via the chat object instead of client.sendMessage
             const result = await chat.sendMessage(media, {
                 caption: caption,
-                sendMediaAsDocument: mediaData.mimetype.startsWith('video/') // Send videos as documents to avoid "Evaluation failed"
+                sendMediaAsDocument: mediaData.mimetype.startsWith('video/'), // Send videos as documents to avoid "Evaluation failed"
+                sendSeen: false
             });
 
             return {
@@ -298,6 +392,37 @@ class WhatsAppService {
         console.log('Bot config updated:', this.botConfig);
     }
 
+    async handleMessageForwarding(message) {
+        console.log('Checking message forwarding...');
+        const apiUrl = process.env.EXTERNAL_API_URL;
+        console.log('Current EXTERNAL_API_URL:', apiUrl);
+
+        if (!apiUrl) {
+            console.log('No external API URL configured. Skipping forwarding.');
+            return;
+        }
+
+        try {
+            const payload = {
+                from: message.from,
+                body: message.body,
+                timestamp: message.timestamp,
+                senderName: message._data?.notifyName || message.from.split('@')[0],
+                isGroup: message.from.includes('@g.us')
+            };
+
+            console.log(`Forwarding message to ${apiUrl}...`);
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            console.log(`Forwarded message response status: ${response.status}`);
+        } catch (error) {
+            console.error('Error forwarding message:', error);
+        }
+    }
+
     addPattern(trigger, response) {
         this.botConfig.patterns.push({ trigger, response });
         this.saveConfig(); // Save to file
@@ -307,6 +432,8 @@ class WhatsAppService {
         this.botConfig.patterns = this.botConfig.patterns.filter(p => p.trigger !== trigger);
         this.saveConfig(); // Save to file
     }
+
+
 
     async generateBotResponse(messageText, chatId, media = null) {
         const lowerMessage = messageText.toLowerCase().trim();

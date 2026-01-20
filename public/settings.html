@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Replica - Settings</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/whatsapp-theme.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-item" title="Status/QR">
+                <i class="fas fa-qrcode"></i>
+            </a>
+            <a href="/chats.html" class="nav-item" title="Chats">
+                <i class="fas fa-comment-alt"></i>
+            </a>
+            <a href="/settings.html" class="nav-item active" title="Settings">
+                <i class="fas fa-cog"></i>
+            </a>
+            <div class="nav-item" title="Profile">
+                <div class="user-avatar" style="width: 24px; height: 24px;"></div>
+            </div>
+        </nav>
+
+        <!-- Sidebar (Visual consistency, could be setting sections) -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div style="font-size: 20px; font-weight: bold; color: var(--wa-header-icon);">Settings</div>
+            </div>
+            <div class="chat-list">
+                <div class="chat-item active">
+                    <div class="chat-avatar"><i class="fas fa-server"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">General Configuration</div>
+                    </div>
+                </div>
+                <!-- Future: More settings sections -->
+                <div class="chat-item" style="opacity: 0.5; cursor: not-allowed;">
+                    <div class="chat-avatar"><i class="fas fa-palette"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">Theme (Coming Soon)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Settings Area -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <div class="chat-header-name">General Configuration</div>
+            </div>
+
+            <div class="messages-container"
+                style="background-color: var(--wa-bg-default); padding: 40px; overflow-y: auto; display: block;">
+                <div
+                    style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+
+                    <h3
+                        style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        Server Settings</h3>
+
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Server
+                            Port</label>
+                        <input type="number" id="settingPort" class="setting-input" placeholder="3001">
+                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Port for the web
+                            server (Requires restart)</div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Session
+                            Path</label>
+                        <input type="text" id="settingSession" class="setting-input" placeholder="./.wwebjs_auth">
+                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Directory to
+                            store WhatsApp session data (Requires restart)</div>
+                    </div>
+
+                    <h3
+                        style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px;">
+                        AI Integration</h3>
+
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Gemini
+                            API Key</label>
+                        <input type="password" id="settingGeminiKey" class="setting-input" placeholder="AIzaSy...">
+                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">API Key for
+                            Google Gemini AI features (Requires restart)</div>
+                    </div>
+
+                    <h3
+                        style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px;">
+                        Integrations</h3>
+
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">External
+                            API URL (Message Forwarding)</label>
+                        <input type="url" id="settingWebhook" class="setting-input"
+                            placeholder="https://api.example.com/webhook">
+                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Incoming
+                            messages will be POSTed to this URL as JSON. Leave empty to disable.</div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">External
+                            API URL (Message Forwarding)</label>
+                        <input type="url" id="settingWebhook" class="setting-input"
+                            placeholder="https://api.example.com/webhook">
+                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Incoming
+                            messages will be POSTed to this URL as JSON. Leave empty to disable.</div>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 30px;">
+                        <button onclick="saveSettings()" id="saveBtn"
+                            style="background-color: var(--wa-outgoing-bg); color: #000; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold;">Save
+                            Settings</button>
+                    </div>
+
+                    <div id="statusMessage" style="margin-top: 15px; text-align: center; display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .setting-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--wa-header-bg);
+            box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.1);
+        }
+    </style>
+
+    <script src="js/settings.js"></script>
+</body>
+
+</html>
