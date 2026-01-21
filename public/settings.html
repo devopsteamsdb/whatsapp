@@ -22,6 +22,9 @@
             <a href="/settings.html" class="nav-item active" title="Settings">
                 <i class="fas fa-cog"></i>
             </a>
+            <a href="/health.html" class="nav-item" title="Health">
+                <i class="fas fa-heartbeat"></i>
+            </a>
             <div class="nav-item" title="Profile">
                 <div class="user-avatar" style="width: 24px; height: 24px;"></div>
             </div>
@@ -98,16 +101,6 @@
                     <h3
                         style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px;">
                         Integrations</h3>
-
-                    <div style="margin-bottom: 20px;">
-                        <label
-                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">External
-                            API URL (Message Forwarding)</label>
-                        <input type="url" id="settingWebhook" class="setting-input"
-                            placeholder="https://api.example.com/webhook">
-                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Incoming
-                            messages will be POSTed to this URL as JSON. Leave empty to disable.</div>
-                    </div>
 
                     <div style="margin-bottom: 20px;">
                         <label

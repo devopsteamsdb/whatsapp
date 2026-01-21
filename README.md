@@ -70,6 +70,10 @@ http://localhost:3000
    - **Session Path**: Change the session storage directory (requires restart).
    - **Message Forwarding**: Enter an **External API URL** to auto-forward incoming messages via JSON POST.
 
+4. **Health Dashboard**:
+   - Click the **Heartbeat** icon in the left navigation bar.
+   - View real-time system health, WhatsApp connection status, and session details.
+
 ### API Endpoints
 
 #### Start Session

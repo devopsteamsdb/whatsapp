@@ -13,17 +13,6 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health Check Endpoint (Monitoring)
-app.get('/health-api.html', (req, res) => {
-    const status = whatsappService.getStatus();
-    res.json({
-        status: status.isReady && status.isAuthenticated,
-        session: status.sessionInfo,
-        whatsappState: status.isReady ? 'CONNECTED' : (status.isAuthenticated ? 'AUTHENTICATED' : 'DISCONNECTED'),
-        timestamp: new Date().toISOString()
-    });
-});
-
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
