@@ -5,6 +5,7 @@ const path = require('path');
 const geminiService = require('./gemini');
 const conversationMemory = require('./conversationMemory');
 const webhookService = require('./webhook');
+const dbService = require('./db');
 
 const CONFIG_FILE = path.join(__dirname, '..', 'bot-config.json');
 
@@ -130,13 +131,22 @@ class WhatsAppService {
             // Don't respond to own messages
             if (message.fromMe) return;
 
+            // Extract sender and group information
+            const contact = await message.getContact();
+            const chat = await message.getChat();
+
+            const senderName = contact.pushname || contact.name || message._data?.notifyName || message.from.split('@')[0];
+            const isGroup = chat.isGroup;
+            const groupName = isGroup ? chat.name : null;
+
+            console.log(`Message from ${senderName} in ${isGroup ? 'group ' + groupName : 'private chat'}`);
+
             // Forward message to external API if configured
             console.log('Calling handleMessageForwarding...');
             this.handleMessageForwarding(message);
 
             if (!this.botConfig.enabled) {
-                console.log('Bot is disabled, skipping auto-response.');
-                return;
+                console.log('Bot is disabled, skipping auto-response bits (but still indexing).');
             }
 
             // Check for special commands
@@ -161,25 +171,44 @@ class WhatsAppService {
 
             try {
                 let mediaData = null;
+                let mediaDescription = null;
 
-                // Check for media (voice notes/audio)
+                // Check for media
                 if (message.hasMedia) {
                     try {
                         const media = await message.downloadMedia();
-                        // Check if it's audio/voice message
-                        if (media && media.mimetype.startsWith('audio/')) {
+                        if (media) {
                             mediaData = {
                                 mimetype: media.mimetype,
-                                data: media.data
+                                data: media.data,
+                                filename: media.filename
                             };
-                            console.log(`Received audio message. MimeType: ${media.mimetype}, Data Length: ${media.data.length}`);
-                        } else {
-                            console.log(`Received media but ignored (not audio/): ${media ? media.mimetype : 'null'}`);
+                            console.log(`Received media. MimeType: ${media.mimetype}`);
+
+                            // Process media description
+                            if (geminiService.isAvailable()) {
+                                console.log('Generating media description...');
+                                mediaDescription = await geminiService.describeMedia(mediaData);
+                                console.log('Media description:', mediaDescription);
+                            }
                         }
                     } catch (mediaError) {
                         console.error('Error downloading media:', mediaError);
                     }
                 }
+
+                // Index the message in the database
+                await dbService.saveMessage({
+                    id: message.id.id,
+                    timestamp: message.timestamp,
+                    phone: message.from,
+                    sender_name: senderName,
+                    group_name: groupName,
+                    body: message.body,
+                    has_media: message.hasMedia,
+                    media_description: mediaDescription,
+                    is_group: isGroup
+                });
 
                 // Send to Webhook (if enabled)
                 webhookService.sendWebhook({
@@ -188,14 +217,18 @@ class WhatsAppService {
                     hasMedia: message.hasMedia,
                     media: mediaData,
                     timestamp: message.timestamp,
-                    pushname: message._data.notifyName
+                    pushname: senderName,
+                    isGroup: isGroup,
+                    groupName: groupName
                 });
 
-                // Store the user's message in conversation memory (with a note for audio)
-                const storedContent = mediaData ? '[Audio Message]' : message.body;
+                if (!this.botConfig.enabled) return;
+
+                // Store the user's message in conversation memory (with a note for audio/media)
+                const storedContent = mediaDescription ? `[Media: ${mediaDescription}] ${message.body}` : (message.hasMedia ? `[Media] ${message.body}` : message.body);
                 conversationMemory.addMessage(message.from, 'user', storedContent);
 
-                const response = await this.generateBotResponse(message.body, message.from, mediaData);
+                const response = await this.generateBotResponse(message.body, message.from, (mediaData && mediaData.mimetype.startsWith('audio/')) ? mediaData : null);
                 if (response) {
                     // Store the bot's response in conversation memory
                     conversationMemory.addMessage(message.from, 'assistant', response);

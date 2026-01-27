@@ -52,10 +52,14 @@ class GeminiService {
                         data: media.data
                     }
                 });
-                // Add instruction specific to audio
-                parts.push({ text: "\n[System Note: The user has sent an audio message. First, TRANSCRIBE the audio exactly as heard in its original language. Then, RESPOND to that transcription. If the audio is unintelligible, say 'I could not understand the audio'.]" });
+                // Add instruction specific to media
+                if (media.mimetype.startsWith('audio/')) {
+                    parts.push({ text: "\n[System Note: The user has sent an audio message. First, TRANSCRIBE the audio exactly as heard in its original language. Then, RESPOND to that transcription. If the audio is unintelligible, say 'I could not understand the audio'.]" });
+                } else {
+                    parts.push({ text: "\n[System Note: The user has sent a visual message (image/video). Describe its content and respond accordingly.]" });
+                }
 
-                console.log('Sending audio to Gemini. MimeType:', media.mimetype);
+                console.log('Sending media to Gemini. MimeType:', media.mimetype);
             }
 
             console.log('Gemini Prompt Parts:', JSON.stringify(parts, (key, value) => {
@@ -74,18 +78,54 @@ class GeminiService {
         }
     }
 
+    // Generate a description for media (image, video, audio)
+    async describeMedia(media) {
+        if (!this.isAvailable() || !media || !media.data) {
+            return null;
+        }
+
+        try {
+            const parts = [];
+
+            if (media.mimetype.startsWith('image/')) {
+                parts.push({ text: "Describe this image in detail. Focus on the main subjects, any text visible, and the overall context." });
+            } else if (media.mimetype.startsWith('video/')) {
+                parts.push({ text: "Describe this video content. What is happening? Mention key visual elements and any spoken words if possible." });
+            } else if (media.mimetype.startsWith('audio/')) {
+                parts.push({ text: "Transcribe and describe this audio message. What is being said? What is the tone?" });
+            } else {
+                parts.push({ text: "Describe this attachment." });
+            }
+
+            parts.push({
+                inlineData: {
+                    mimeType: media.mimetype,
+                    data: media.data
+                }
+            });
+
+            const result = await this.model.generateContent(parts);
+            const response = await result.response;
+            return response.text();
+        } catch (error) {
+            console.error('Error describing media:', error);
+            return "[Error describing media]";
+        }
+    }
+
     // Generate a conversation summary for long chats
-    async summarizeConversation(messages) {
+    async summarizeConversation(messages, customPrompt = null) {
         if (!this.isAvailable()) {
             return null;
         }
 
         try {
             const conversationText = messages.map(m =>
-                `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+                `${m.sender_name || (m.is_group ? 'Member' : 'User')}: ${m.body || (m.media_description ? '[Media: ' + m.media_description + ']' : '[Attachment]')}`
             ).join('\n');
 
-            const prompt = `Summarize this conversation briefly, highlighting key topics and any important information the user shared:\n\n${conversationText}\n\nSummary:`;
+            const defaultPrompt = `Summarize this conversation briefly, highlighting key topics and any important information the user shared:\n\n${conversationText}\n\nSummary:`;
+            const prompt = customPrompt ? `${customPrompt}\n\nConversation:\n${conversationText}` : defaultPrompt;
 
             const result = await this.model.generateContent(prompt);
             const response = await result.response;

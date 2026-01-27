@@ -320,7 +320,8 @@ router.get('/settings', (req, res) => {
                 PORT: settings.PORT,
                 SESSION_PATH: settings.SESSION_PATH,
                 GEMINI_API_KEY: settings.GEMINI_API_KEY || '',
-                EXTERNAL_API_URL: settings.EXTERNAL_API_URL
+                EXTERNAL_API_URL: settings.EXTERNAL_API_URL,
+                DAILY_REPORT_PROMPT: settings.DAILY_REPORT_PROMPT || ''
             }
         });
     } catch (error) {
@@ -353,7 +354,7 @@ router.get('/health', (req, res) => {
 
 router.post('/settings', (req, res) => {
     try {
-        const { PORT, SESSION_PATH, GEMINI_API_KEY, EXTERNAL_API_URL } = req.body;
+        const { PORT, SESSION_PATH, GEMINI_API_KEY, EXTERNAL_API_URL, DAILY_REPORT_PROMPT } = req.body;
 
         let envContent = '';
         if (fs.existsSync(ENV_FILE)) {
@@ -364,7 +365,8 @@ router.post('/settings', (req, res) => {
             PORT: PORT,
             SESSION_PATH: SESSION_PATH,
             GEMINI_API_KEY: GEMINI_API_KEY,
-            EXTERNAL_API_URL: EXTERNAL_API_URL
+            EXTERNAL_API_URL: EXTERNAL_API_URL,
+            DAILY_REPORT_PROMPT: DAILY_REPORT_PROMPT
         };
 
         // Update or append

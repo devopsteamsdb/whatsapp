@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsappAPI - Daily Reports</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-item" title="Status/QR">
+                <i class="fas fa-qrcode"></i>
+            </a>
+            <a href="/chats.html" class="nav-item" title="Chats">
+                <i class="fas fa-comment-alt"></i>
+            </a>
+            <a href="/reports.html" class="nav-item active" title="Daily Reports">
+                <i class="fas fa-file-alt"></i>
+            </a>
+            <a href="/settings.html" class="nav-item" title="Settings">
+                <i class="fas fa-cog"></i>
+            </a>
+            <a href="/health.html" class="nav-item" title="Health">
+                <i class="fas fa-heartbeat"></i>
+            </a>
+            <div class="nav-item" title="Profile">
+                <div class="user-avatar"
+                    style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%;"></div>
+            </div>
+        </nav>
+
+        <div class="main-viewport">
+            <div class="container">
+                <!-- Header -->
+                <header class="header">
+                    <div class="logo">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M16 0C7.163 0 0 7.163 0 16c0 2.825.734 5.48 2.02 7.784L0 32l8.416-2.02A15.923 15.923 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0z"
+                                fill="#25D366" />
+                            <path
+                                d="M25.6 22.4c-.8 2.267-4 4.134-6.534 4.667-1.466.267-3.2.4-9.333-2-7.2-2.8-11.867-10.133-12.267-10.667-.4-.533-3.2-4.267-3.2-8.133 0-3.867 2-5.734 2.8-6.534.667-.666 1.734-1.066 2.8-1.066.267 0 .533.133.8.133.8 0 1.2.134 1.733 1.334.667 1.466 2.267 5.466 2.4 5.866.134.4.267.934 0 1.467-.266.667-.533 1.067-.933 1.6-.4.533-.8.934-1.2 1.467-.4.4-.8.933-.267 1.733.534.8 2.267 3.734 4.934 6.134 3.466 3.066 6.266 4 7.2 4.533.8.4 1.6.267 2.133-.4.667-.8 1.467-2.133 2.267-3.466.533-.8 1.2-.934 2-.534.8.4 5.066 2.4 5.866 2.8.8.4 1.334.667 1.6 1.067.267.533.267 2-.533 4.133z"
+                                fill="#fff" />
+                        </svg>
+                        <h1>Daily Status Reports</h1>
+                    </div>
+                </header>
+
+                <!-- Main Content -->
+                <main class="main-content" style="grid-template-columns: 1fr;">
+                    <div class="card">
+                        <div class="card-header"
+                            style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h2>Daily Summary</h2>
+                                <p class="card-subtitle">AI-generated overview of your conversations</p>
+                            </div>
+                            <div class="date-picker-group" style="display: flex; gap: 10px; align-items: center;">
+                                <input type="date" id="reportDate" class="form-input" style="width: auto;">
+                                <button id="generateBtn" class="btn btn-primary shadow-sm">
+                                    <i class="fas fa-sync-alt"></i> Generate
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <div id="loadingState" style="display: none; text-align: center; padding: 40px;">
+                                <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--accent-primary);"></i>
+                                <p style="margin-top: 15px; color: var(--text-secondary);">Generating report using
+                                    Gemini AI...</p>
+                            </div>
+
+                            <div id="reportContent" class="report-content"
+                                style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; min-height: 200px;">
+                                <div id="summaryText"
+                                    style="white-space: pre-wrap; font-size: 1.1rem; line-height: 1.7; color: var(--text-primary);">
+                                </div>
+                            </div>
+
+                            <div id="noDataState"
+                                style="display: none; text-align: center; padding: 40px; color: var(--text-secondary);">
+                                <i class="fas fa-history fa-3x" style="opacity: 0.3; margin-bottom: 15px;"></i>
+                                <p>No messages found for the selected date.</p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- Footer -->
+                <footer class="footer">
+                    <p>WhatsappAPI - Powered by Gemini AI</p>
+                </footer>
+            </div>
+            <script src="/js/reports.js"></script>
+        </div>
+    </div>
+</body>
+
+</html>

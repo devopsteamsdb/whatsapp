@@ -8,15 +8,28 @@ A modern WhatsApp HTTP API web application built with Node.js and whatsapp-web.j
 
 ## Features
 
+✨ **Daily Status Reports** - AI-generated summaries of your chat history using Google Gemini
+✨ **AI Media Description** - Automatically describe images, videos, and audio attachments using AI
+✨ **Message Indexing** - All messages are stored in a local SQLite database for analytics and reporting
 ✨ **Modern Web Interface** - Beautiful dark mode UI with glassmorphism effects
 ✨ **WhatsApp Web Replica** - Full-featured web interface to view chats and messages
-✨ **Settings Dashboard** - Configure server port, session path, and integrations
-✨ **Message Forwarding** - Automatically forward incoming messages to an external API
-🔐 **QR Code Authentication** - Easy WhatsApp Web login via QR code scanning
-📨 **Send Messages** - Send WhatsApp messages through web UI or API
-🔄 **Session Management** - Persistent sessions with automatic reconnection
-🚀 **RESTful API** - Complete HTTP API for integration
-📱 **Responsive Design** - Works perfectly on desktop and mobile  
+✨ **Settings Dashboard** - Configure server port, session path, and AI integrations
+
+## Daily Status Reports
+
+The application now supports **Daily Status Reports**. Every message sent or received is indexed in a local SQLite database. Using Google Gemini AI, the system can:
+- **Index Messages**: Store sender, group name, timestamp, and body.
+- **AI Media Processing**: Generate text descriptions for images, videos, and audio.
+- **Daily Summaries**: Generate a comprehensive report for any specific day using a customizable AI prompt.
+
+### Database Strategy
+
+We use **SQLite3** for lightweight, persistent storage without requiring a separate database server.
+- **Persistence**: Messages are saved in `data/whatsapp.db`. For **Docker** users, map this directory to a persistent volume.
+- **Indexing**: Incoming messages are indexed in real-time.
+- **Customization**: The "Daily Report Prompt" can be edited in the Settings page to tailor the AI summary.
+
+---
 
 ## Quick Start
 
@@ -25,13 +38,14 @@ A modern WhatsApp HTTP API web application built with Node.js and whatsapp-web.j
 - Node.js v18 or higher
 - npm or yarn
 - A WhatsApp account
+- **Optional**: [Google Gemini API Key](https://aistudio.google.com/) for AI features
 
 ### Installation
 
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd molten-interstellar
+cd whatsapp
 ```
 
 2. Install dependencies:
@@ -39,189 +53,45 @@ cd molten-interstellar
 npm install
 ```
 
-3. Start the server:
+3. Configure your environment (see [Configuration](#configuration))
+
+4. Start the server:
 ```bash
 npm start
 ```
 
-4. Open your browser and navigate to:
-```
-http://localhost:3000
-```
+---
 
 ## Usage
 
 ### Web Interface
 
-1. **Dashboard (Home)**:
-   - **Start Session**: Click "Start Session" button to initialize WhatsApp connection
-   - **Scan QR Code**: Use your WhatsApp mobile app to scan the displayed QR code
-   - **Send Messages**: Once connected, use the message form to send WhatsApp messages
+1. **Daily Reports**:
+   - Click the **Document** icon in the left navigation bar.
+   - Select a date and click "Generate" to receive an AI summary of that day's activity.
 
-2. **Chats (WhatsApp Web Replica)**:
-   - Click the **Chat Bubble** icon in the left navigation bar.
-   - View your active chat list with unread counts.
-   - Click a chat to view full message history (displayed chronologically).
-   - Send text and media messages directly from the interface.
-
-3. **Settings**:
-   - Click the **Gear** icon in the left navigation bar.
-   - **Server Port**: Change the running port (requires restart).
-   - **Session Path**: Change the session storage directory (requires restart).
-   - **Message Forwarding**: Enter an **External API URL** to auto-forward incoming messages via JSON POST.
-
-4. **Health Dashboard**:
-   - Click the **Heartbeat** icon in the left navigation bar.
-   - View real-time system health, WhatsApp connection status, and session details.
+2. **Settings**:
+   - **Daily Report Prompt**: Define how Gemini should summarize your day. Supports Hebrew and English.
 
 ### API Endpoints
 
-#### Start Session
+#### Daily Report
 ```bash
-POST /api/session/start
+GET /api/reports/daily?date=YYYY-MM-DD
 ```
-Initialize a new WhatsApp session.
-
-#### Get QR Code
-```bash
-GET /api/session/qr
-```
-Retrieve the current QR code for scanning.
+Generate an AI summary for the specified date.
 
 **Response:**
 ```json
 {
   "success": true,
-  "qrCode": "data:image/png;base64,..."
+  "date": "2024-01-27",
+  "summary": "Today's conversations mainly focused on...",
+  "count": 42
 }
 ```
 
-#### Check Session Status
-```bash
-GET /api/session/status
-```
-Get the current session status.
-
-**Response:**
-```json
-{
-  "success": true,
-  "status": {
-    "isReady": true,
-    "isAuthenticated": true,
-    "hasQRCode": false
-  }
-}
-```
-
-#### Get Session Info
-```bash
-GET /api/session/info
-```
-Get information about the authenticated session.
-
-**Response:**
-```json
-{
-  "success": true,
-  "info": {
-    "phoneNumber": "972501234567",
-    "pushname": "John Doe",
-    "platform": "android"
-  }
-}
-```
-
-#### Send Message
-```bash
-POST /api/messages/send
-Content-Type: application/json
-
-{
-  "number": "972501234567",
-  "message": "Hello from WhatsappAPI!"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "result": {
-    "messageId": "...",
-    "timestamp": 1234567890
-  }
-}
-```
-
-#### Logout
-```bash
-POST /api/session/logout
-```
-Logout and destroy the current session.
-
-### Message Receiver API
-
-#### Get Webhook Config
-```bash
-GET /api/webhook
-```
-View current webhook configuration.
-
-#### Configure Webhook
-```bash
-PUT /api/webhook
-Content-Type: application/json
-
-{
-  "enabled": true,
-  "url": "https://your-webhook-url.com/receive"
-}
-```
-Set up a webhook to receive real-time messages.
-
-#### Retrieve Messages
-```bash
-GET /api/messages/:phone
-```
-Get conversation history for a specific phone number. Supports `limit` query param (default: 50).
-
-#### Settings API
-
-##### Get Settings
-```bash
-GET /api/settings
-```
-Retrieves current server configuration.
-
-##### Update Settings
-```bash
-POST /api/settings
-Content-Type: application/json
-
-{
-  "PORT": 3001,
-  "SESSION_PATH": "./.wwebjs_auth",
-  "EXTERNAL_API_URL": "https://webhook.site/..."
-}
-```
-Updates configuration. Note that `PORT` and `SESSION_PATH` changes require a server restart.
-
-#### Health Check
-```bash
-GET /api/health
-```
-Returns system status.
-
-**Response:**
-```json
-{
-  "status": true,
-  "session": { "phoneNumber": "..." },
-  "whatsappState": "CONNECTED",
-  "timestamp": "..."
-}
-```
+---
 
 ## Configuration
 
@@ -230,36 +100,45 @@ Create a `.env` file in the root directory:
 ```env
 PORT=3000
 SESSION_PATH=./.wwebjs_auth
+GEMINI_API_KEY=your_gemini_api_key_here
+DAILY_REPORT_PROMPT=Summarize the day's conversations, highlighting important tasks.
 ```
 
 ## Technology Stack
 
 - **Backend**: Node.js, Express
+- **Database**: SQLite3
+- **AI Integration**: Google Gemini AI (Multimodal)
 - **WhatsApp Integration**: whatsapp-web.js
 - **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **QR Code**: qrcode library
-- **Authentication**: LocalAuth strategy with persistent sessions
 
 ## Project Structure
 
 ```
-molten-interstellar/
+whatsapp/
 ├── public/
-│   ├── css/
-│   │   └── style.css          # Premium dark mode styles
 │   ├── js/
-│   │   └── app.js             # Frontend application logic
-│   └── index.html             # Main web interface
+│   │   ├── app.js             # Main app logic
+│   │   ├── chats.js           # WhatsApp Web Replica logic
+│   │   ├── reports.js         # Daily Reports logic
+│   │   └── settings.js        # Settings logic
+│   ├── index.html             # Status/QR page
+│   ├── reports.html           # Daily Reports UI
+│   └── ...
 ├── routes/
-│   └── api.js                 # API route handlers
+│   ├── api.js                 # General API routes
+│   └── reports.js             # Reports specific routes
 ├── services/
-│   └── whatsapp.js            # WhatsApp service layer
+│   ├── db.js                  # SQLite database service
+│   ├── gemini.js              # Gemini AI service
+│   └── whatsapp.js            # WhatsApp core service
+├── data/
+│   └── whatsapp.db            # SQLite database (auto-generated)
 ├── .env                       # Environment configuration
-├── .gitignore                 # Git ignore rules
-├── package.json               # Project dependencies
-├── server.js                  # Express server setup
-└── README.md                  # This file
+├── server.js                  # Express server entry point
+└── README.md                  # Documentation
 ```
+
 
 ## Screenshots
 

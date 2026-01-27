@@ -12,6 +12,7 @@ async function loadSettings() {
             document.getElementById('settingSession').value = data.settings.SESSION_PATH || '';
             document.getElementById('settingGeminiKey').value = data.settings.GEMINI_API_KEY || '';
             document.getElementById('settingWebhook').value = data.settings.EXTERNAL_API_URL || '';
+            document.getElementById('settingReportPrompt').value = data.settings.DAILY_REPORT_PROMPT || '';
         }
     } catch (error) {
         console.error('Error loading settings:', error);
@@ -24,6 +25,7 @@ async function saveSettings() {
     const session = document.getElementById('settingSession').value;
     const geminiKey = document.getElementById('settingGeminiKey').value;
     const webhook = document.getElementById('settingWebhook').value;
+    const reportPrompt = document.getElementById('settingReportPrompt').value;
     const btn = document.getElementById('saveBtn');
 
     btn.disabled = true;
@@ -39,7 +41,8 @@ async function saveSettings() {
                 PORT: port,
                 SESSION_PATH: session,
                 GEMINI_API_KEY: geminiKey,
-                EXTERNAL_API_URL: webhook
+                EXTERNAL_API_URL: webhook,
+                DAILY_REPORT_PROMPT: reportPrompt
             })
         });
 

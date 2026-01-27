@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const apiRoutes = require('./routes/api');
+const reportsRoutes = require('./routes/reports');
 const whatsappService = require('./services/whatsapp');
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.use('/api', apiRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Root route
 app.get('/', (req, res) => {

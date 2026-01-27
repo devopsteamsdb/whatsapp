@@ -19,6 +19,9 @@
             <a href="/chats.html" class="nav-item" title="Chats">
                 <i class="fas fa-comment-alt"></i>
             </a>
+            <a href="/reports.html" class="nav-item" title="Daily Reports">
+                <i class="fas fa-file-alt"></i>
+            </a>
             <a href="/settings.html" class="nav-item active" title="Settings">
                 <i class="fas fa-cog"></i>
             </a>
@@ -110,6 +113,17 @@
                             placeholder="https://api.example.com/webhook">
                         <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Incoming
                             messages will be POSTed to this URL as JSON. Leave empty to disable.</div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Daily
+                            Report Prompt</label>
+                        <textarea id="settingReportPrompt" class="setting-input"
+                            style="height: 100px; resize: vertical;"
+                            placeholder="Summarize the day's conversations, highlighting important tasks and follow-ups."></textarea>
+                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">The AI prompt
+                            used to generate your daily status report. Supports Hebrew and English.</div>
                     </div>
 
                     <div style="text-align: right; margin-top: 30px;">

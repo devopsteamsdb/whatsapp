@@ -5,3 +5,4 @@ node_modules/
 *.log
 conversations.json
 bot-config.json
+data/
