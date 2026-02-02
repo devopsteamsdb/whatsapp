@@ -57,13 +57,14 @@ class WhatsAppService {
 
     initialize() {
         if (this.client) {
-            console.log('Client already initialized');
+            console.log('[WhatsApp] Client already initialized');
             return;
         }
 
+        console.log('[WhatsApp] Creating new client instance...');
         this.client = new Client({
             authStrategy: new LocalAuth({
-                dataPath: './.wwebjs_auth'
+                dataPath: path.join(__dirname, '..', '.wwebjs_auth')
             }),
             puppeteer: {
                 headless: true,
@@ -81,7 +82,7 @@ class WhatsAppService {
 
         this.setupEventHandlers();
         this.client.initialize();
-        console.log('WhatsApp client initialization started...');
+        console.log('[WhatsApp] WhatsApp client initialization started...');
     }
 
     setupEventHandlers() {
@@ -92,13 +93,13 @@ class WhatsAppService {
         });
 
         this.client.on('authenticated', () => {
-            console.log('Client authenticated');
+            console.log('[WhatsApp] Client authenticated (Session saved)');
             this.isAuthenticated = true;
             this.qrCode = null;
         });
 
         this.client.on('ready', async () => {
-            console.log('Client is ready!');
+            console.log('[WhatsApp] Client is ready!');
             this.isReady = true;
             this.isAuthenticated = true;
 
@@ -109,11 +110,19 @@ class WhatsAppService {
                 platform: info.platform,
                 pushname: info.pushname
             };
-            console.log('Session info:', this.sessionInfo);
+            console.log('[WhatsApp] Session info:', this.sessionInfo);
+        });
+
+        this.client.on('change_state', state => {
+            console.log('[WhatsApp] State changed:', state);
+        });
+
+        this.client.on('loading_screen', (percent, message) => {
+            console.log('[WhatsApp] Loading screen:', percent, message);
         });
 
         this.client.on('disconnected', (reason) => {
-            console.log('Client disconnected:', reason);
+            console.log('[WhatsApp] ERROR: Client disconnected:', reason);
             this.isReady = false;
             this.isAuthenticated = false;
             this.qrCode = null;
@@ -121,25 +130,44 @@ class WhatsAppService {
         });
 
         this.client.on('auth_failure', (msg) => {
-            console.error('Authentication failure:', msg);
+            console.error('[WhatsApp] CRITICAL: Authentication failure:', msg);
             this.isAuthenticated = false;
         });
 
-        this.client.on('message', async (message) => {
-            console.log(`[Event] Message received from ${message.from} (fromMe: ${message.fromMe})`);
-
-            // Don't respond to own messages
-            if (message.fromMe) return;
+        this.client.on('message_create', async (message) => {
+            console.log(`[WhatsApp] Event: Message created ${message.fromMe ? '(by me)' : '(incoming)'} (ID: ${message.id.id})`);
 
             // Extract sender and group information
             const contact = await message.getContact();
             const chat = await message.getChat();
 
-            const senderName = contact.pushname || contact.name || message._data?.notifyName || message.from.split('@')[0];
+            const senderName = contact.pushname || contact.name || message._data?.notifyName || (message.fromMe ? 'Me' : message.from.split('@')[0]);
             const isGroup = chat.isGroup;
             const groupName = isGroup ? chat.name : null;
 
-            console.log(`Message from ${senderName} in ${isGroup ? 'group ' + groupName : 'private chat'}`);
+            console.log(`[WhatsApp] Message ${message.fromMe ? 'from me' : 'from: ' + senderName} | Group: ${isGroup ? groupName : 'N/A'} | Body: ${message.body}`);
+
+            // Index the message in the database (ALL messages)
+            try {
+                await dbService.saveMessage({
+                    id: message.id.id,
+                    timestamp: message.timestamp,
+                    phone: message.from,
+                    sender_name: senderName,
+                    group_name: groupName,
+                    body: message.body,
+                    has_media: message.hasMedia,
+                    media_description: null, // Basic indexing, media desc handled in bot logic if needed
+                    is_group: isGroup
+                });
+            } catch (dbError) {
+                console.error('[WhatsApp] Failed to index message:', dbError);
+            }
+
+            // Don't respond to own messages or if bot disabled
+            if (message.fromMe) {
+                return;
+            }
 
             // Forward message to external API if configured
             console.log('Calling handleMessageForwarding...');
@@ -197,18 +225,7 @@ class WhatsAppService {
                     }
                 }
 
-                // Index the message in the database
-                await dbService.saveMessage({
-                    id: message.id.id,
-                    timestamp: message.timestamp,
-                    phone: message.from,
-                    sender_name: senderName,
-                    group_name: groupName,
-                    body: message.body,
-                    has_media: message.hasMedia,
-                    media_description: mediaDescription,
-                    is_group: isGroup
-                });
+                // Indexing already happened above
 
                 // Send to Webhook (if enabled)
                 webhookService.sendWebhook({
@@ -296,10 +313,13 @@ class WhatsAppService {
     }
 
     async getChats() {
+        console.log(`[WhatsApp] Fetching chats from client... (isReady: ${this.isReady}, isAuthenticated: ${this.isAuthenticated})`);
         if (!this.isReady) {
-            throw new Error('Client is not ready');
+            console.error('[WhatsApp] getChats failed: Client is not ready');
+            throw new Error('Client is not ready. Please wait for the "ready" state.');
         }
         const chats = await this.client.getChats();
+        console.log(`[WhatsApp] Successfully fetched ${chats.length} chats from client`);
         return chats.map(chat => ({
             id: chat.id._serialized,
             name: chat.name || chat.id.user,
@@ -315,8 +335,64 @@ class WhatsAppService {
         }));
     }
 
+    async syncMessagesForDay(dateStr) {
+        console.log(`[WhatsApp] Syncing messages for day: ${dateStr}`);
+        if (!this.isReady) {
+            console.error('[WhatsApp] Sync failed: Client is not ready');
+            return 0;
+        }
+
+        try {
+            const startOfDay = new Date(dateStr);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(dateStr);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const startTs = Math.floor(startOfDay.getTime() / 1000);
+            const endTs = Math.floor(endOfDay.getTime() / 1000);
+
+            const chats = await this.client.getChats();
+            let totalSynced = 0;
+
+            for (const chat of chats) {
+                // Focus on chats with activity today
+                if (chat.timestamp < startTs) continue;
+
+                console.log(`[WhatsApp] Syncing history for chat: ${chat.name || chat.id.user}`);
+                const messages = await chat.fetchMessages({ limit: 100 });
+
+                for (const msg of messages) {
+                    if (msg.timestamp >= startTs && msg.timestamp <= endTs) {
+                        const contact = await msg.getContact();
+                        const senderName = contact.pushname || contact.name || msg._data?.notifyName || (msg.fromMe ? 'Me' : msg.from.split('@')[0]);
+
+                        await dbService.saveMessage({
+                            id: msg.id.id,
+                            timestamp: msg.timestamp,
+                            phone: msg.from,
+                            sender_name: senderName,
+                            group_name: chat.isGroup ? chat.name : null,
+                            body: msg.body,
+                            has_media: msg.hasMedia,
+                            media_description: null,
+                            is_group: chat.isGroup
+                        });
+                        totalSynced++;
+                    }
+                }
+            }
+
+            console.log(`[WhatsApp] Sync complete. Total messages indexed: ${totalSynced}`);
+            return totalSynced;
+        } catch (error) {
+            console.error('[WhatsApp] Sync error:', error);
+            return 0;
+        }
+    }
+
     async getChatHistory(chatIdOrNumber, limit = 50) {
         if (!this.isReady) {
+            console.error(`[WhatsApp] getChatHistory failed for ${chatIdOrNumber}: Client is not ready`);
             throw new Error('Client is not ready');
         }
 
@@ -327,17 +403,17 @@ class WhatsAppService {
                 chatId = chatId.replace(/[^\d]/g, '') + '@c.us';
             }
 
-            console.log(`Fetching chat history for: ${chatId} (limit: ${limit})`);
+            console.log(`[WhatsApp] Fetching chat history for: ${chatId} (limit: ${limit})`);
 
             const chat = await this.client.getChatById(chatId);
             if (!chat) {
-                console.error(`Chat not found for ID: ${chatId}`);
+                console.error(`[WhatsApp] Chat not found for ID: ${chatId}`);
                 throw new Error(`Chat not found for ${chatId}`);
             }
 
-            console.log(`Chat found. Fetching messages...`);
+            console.log(`[WhatsApp] Chat object retrieved for ${chatId}. Fetching messages...`);
             const messages = await chat.fetchMessages({ limit: limit });
-            console.log(`Fetched ${messages.length} messages for ${chatId}`);
+            console.log(`[WhatsApp] Fetched ${messages.length} messages for ${chatId}`);
 
             return messages.map(msg => ({
                 id: msg.id.id,
@@ -349,7 +425,7 @@ class WhatsAppService {
                 hasMedia: msg.hasMedia
             }));
         } catch (error) {
-            console.error('Error fetching chat history:', error);
+            console.error(`[WhatsApp] Error fetching chat history for ${chatIdOrNumber}:`, error);
             throw error;
         }
     }

@@ -15,19 +15,18 @@ A modern WhatsApp HTTP API web application built with Node.js and whatsapp-web.j
 ✨ **WhatsApp Web Replica** - Full-featured web interface to view chats and messages
 ✨ **Settings Dashboard** - Configure server port, session path, and AI integrations
 
-## Daily Status Reports
+### Report Data Sourcing (Hybrid Strategy)
 
-The application now supports **Daily Status Reports**. Every message sent or received is indexed in a local SQLite database. Using Google Gemini AI, the system can:
-- **Index Messages**: Store sender, group name, timestamp, and body.
-- **AI Media Processing**: Generate text descriptions for images, videos, and audio.
-- **Daily Summaries**: Generate a comprehensive report for any specific day using a customizable AI prompt.
+To ensure maximum performance and data freshness, the application uses a **Hybrid Sourcing Strategy**:
+- **Real-time (Today)**: When generating a report for the current day, the app fetches messages directly from your phone. This ensures 100% accuracy for fresh conversations without waiting for background indexing.
+- **Database (Historical)**: For past dates, the app pulls data instantly from the local SQLite database. 
+- **Media Summarization (DB-less)**: Media files (images, audio) are analyzed by AI on-the-fly and then discarded. Only the text summary is optionally saved, keeping your disk clean and your data private.
 
-### Database Strategy
+### AI Configuration & Lite Mode
 
-We use **SQLite3** for lightweight, persistent storage without requiring a separate database server.
-- **Persistence**: Messages are saved in `data/whatsapp.db`. For **Docker** users, map this directory to a persistent volume.
-- **Indexing**: Incoming messages are indexed in real-time.
-- **Customization**: The "Daily Report Prompt" can be edited in the Settings page to tailor the AI summary.
+You can fine-tune the AI behavior in the **Settings Dashboard**:
+- **Model Selection**: Choose from a list of models supported by your API key (e.g., `gemini-2.0-flash`, `gemini-1.5-pro`).
+- **Lite Mode**: Enable "Lite Mode" to force-switch to high-efficiency models (like `gemini-2.5-flash-lite`). This is recommended for faster summaries and lower quota usage on free-tier API keys.
 
 ---
 
@@ -98,7 +97,7 @@ Generate an AI summary for the specified date.
 Create a `.env` file in the root directory:
 
 ```env
-PORT=3000
+PORT=3002
 SESSION_PATH=./.wwebjs_auth
 GEMINI_API_KEY=your_gemini_api_key_here
 DAILY_REPORT_PROMPT=Summarize the day's conversations, highlighting important tasks.
@@ -154,6 +153,28 @@ The application features a modern dark mode interface with:
 - Automatic QR code refresh
 - Session persistence across restarts
 - One-click logout
+
+## Debugging and Inspection
+
+We have added enhanced logging and inspection tools to help diagnose issues with chats and reports.
+
+### 1. Enhanced Logging
+Internal services now provide detailed logs in the terminal, prefixed with:
+- `[DB]`: SQLite database operations (connection, schema, saving).
+- `[WhatsApp]`: Core client events and message handling.
+- `[API]`: Incoming request tracking and response stats.
+
+### 2. Database Inspection
+The messages table can be inspected directly via the API:
+```bash
+GET /api/db/inspect
+```
+This returns the last 100 messages stored in the database.
+
+### 3. Verification Steps
+- If chats are missing, check if `GET /api/chats` returns a count higher than 0.
+- If reports are failing, verify that messages exist in the database using `/api/db/inspect`.
+- Check the console for `[DB] CRITICAL` or `[WhatsApp] Error` messages.
 
 ## Troubleshooting
 

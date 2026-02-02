@@ -12,17 +12,19 @@ if (!fs.existsSync(DATA_DIR)) {
 
 class DatabaseService {
     constructor() {
+        console.log(`[DB] Attempting to open database at: ${DB_PATH}`);
         this.db = new sqlite3.Database(DB_PATH, (err) => {
             if (err) {
-                console.error('Error opening database:', err);
+                console.error('[DB] CRITICAL: Error opening database:', err);
             } else {
-                console.log('Connected to SQLite database at', DB_PATH);
+                console.log('[DB] Connected to SQLite database successfully');
                 this.initSchema();
             }
         });
     }
 
     initSchema() {
+        console.log('[DB] Initializing database schema...');
         const schema = `
             CREATE TABLE IF NOT EXISTS messages (
                 id TEXT PRIMARY KEY,
@@ -39,14 +41,15 @@ class DatabaseService {
 
         this.db.run(schema, (err) => {
             if (err) {
-                console.error('Error initializing schema:', err);
+                console.error('[DB] Error initializing schema:', err);
             } else {
-                console.log('Database schema initialized');
+                console.log('[DB] Database schema initialized successfully');
             }
         });
     }
 
     async saveMessage(msg) {
+        console.log(`[DB] Saving message: ${msg.id} from ${msg.phone}`);
         return new Promise((resolve, reject) => {
             const query = `
                 INSERT OR REPLACE INTO messages 
@@ -67,9 +70,10 @@ class DatabaseService {
 
             this.db.run(query, params, function (err) {
                 if (err) {
-                    console.error('Error saving message:', err);
+                    console.error('[DB] Error saving message:', err);
                     reject(err);
                 } else {
+                    console.log(`[DB] Message ${msg.id} saved successfully`);
                     resolve(this.lastID);
                 }
             });
@@ -78,6 +82,7 @@ class DatabaseService {
 
     async getMessagesForDay(date) {
         // date is YYYY-MM-DD
+        console.log(`[DB] Fetching messages for day: ${date}`);
         const start = Math.floor(new Date(date + 'T00:00:00').getTime() / 1000);
         const end = Math.floor(new Date(date + 'T23:59:59').getTime() / 1000);
 
@@ -85,7 +90,21 @@ class DatabaseService {
             const query = `SELECT * FROM messages WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC`;
             this.db.all(query, [start, end], (err, rows) => {
                 if (err) {
-                    console.error('Error fetching messages:', err);
+                    console.error('[DB] Error fetching messages:', err);
+                    reject(err);
+                } else {
+                    console.log(`[DB] Fetched ${rows.length} messages for ${date}`);
+                    resolve(rows);
+                }
+            });
+        });
+    }
+
+    async query(sql, params = []) {
+        return new Promise((resolve, reject) => {
+            this.db.all(sql, params, (err, rows) => {
+                if (err) {
+                    console.error('[DB] Custom query error:', err);
                     reject(err);
                 } else {
                     resolve(rows);

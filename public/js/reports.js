@@ -34,6 +34,8 @@ async function loadReport(date) {
         if (data.success) {
             if (data.count > 0) {
                 summaryText.innerText = data.summary;
+                document.getElementById('sourceBadge').innerText = `Source: ${data.source || 'Database'}`;
+                document.getElementById('msgCount').innerText = `${data.count} messages`;
                 reportContent.style.display = 'block';
             } else {
                 noDataState.style.display = 'block';

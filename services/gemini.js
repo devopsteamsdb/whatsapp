@@ -3,13 +3,14 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 class GeminiService {
     constructor() {
         this.apiKey = process.env.GEMINI_API_KEY;
+        this.modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
         this.genAI = null;
         this.model = null;
 
         if (this.apiKey) {
             this.genAI = new GoogleGenerativeAI(this.apiKey);
-            this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-            console.log('Gemini AI service initialized');
+            this.model = this.genAI.getGenerativeModel({ model: this.modelName });
+            console.log(`Gemini AI service initialized with model: ${this.modelName}`);
         } else {
             console.log('Gemini API key not found. AI responses will be disabled.');
         }
@@ -131,8 +132,35 @@ class GeminiService {
             const response = await result.response;
             return response.text();
         } catch (error) {
-            console.error('Error summarizing conversation:', error);
-            return null;
+            console.error(`Error summarizing conversation with model ${this.modelName}:`, error);
+            // Re-throw to allow route to handle/log specific API error
+            throw error;
+        }
+    }
+
+    async listAvailableModels() {
+        if (!this.apiKey) return [];
+
+        try {
+            // Use fetch to call the REST API directly as the SDK might not expose this easily
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+            const data = await response.json();
+
+            if (data.error) {
+                console.error('Error listing models from API:', data.error);
+                return [];
+            }
+
+            return (data.models || [])
+                .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+                .map(m => ({
+                    name: m.name.replace('models/', ''),
+                    displayName: m.displayName,
+                    description: m.description
+                }));
+        } catch (error) {
+            console.error('Failed to list models:', error);
+            return [];
         }
     }
 }

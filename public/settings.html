@@ -92,50 +92,65 @@
                         style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px;">
                         AI Integration</h3>
 
-                    <div style="margin-bottom: 20px;">
-                        <label
-                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Gemini
-                            API Key</label>
-                        <input type="password" id="settingGeminiKey" class="setting-input" placeholder="AIzaSy...">
-                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">API Key for
-                            Google Gemini AI features (Requires restart)</div>
-                    </div>
-
-                    <h3
-                        style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px;">
-                        Integrations</h3>
-
-                    <div style="margin-bottom: 20px;">
-                        <label
-                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">External
-                            API URL (Message Forwarding)</label>
-                        <input type="url" id="settingWebhook" class="setting-input"
-                            placeholder="https://api.example.com/webhook">
-                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Incoming
-                            messages will be POSTed to this URL as JSON. Leave empty to disable.</div>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label
-                            style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Daily
-                            Report Prompt</label>
-                        <textarea id="settingReportPrompt" class="setting-input"
-                            style="height: 100px; resize: vertical;"
-                            placeholder="Summarize the day's conversations, highlighting important tasks and follow-ups."></textarea>
-                        <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">The AI prompt
-                            used to generate your daily status report. Supports Hebrew and English.</div>
-                    </div>
-
-                    <div style="text-align: right; margin-top: 30px;">
-                        <button onclick="saveSettings()" id="saveBtn"
-                            style="background-color: var(--wa-outgoing-bg); color: #000; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold;">Save
-                            Settings</button>
-                    </div>
-
-                    <div id="statusMessage" style="margin-top: 15px; text-align: center; display: none;"></div>
+                    <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">API Key for
+                        Google Gemini AI features (Requires restart)</div>
                 </div>
+
+                <div style="margin-bottom: 20px; display: flex; align-items: center;">
+                    <input type="checkbox" id="settingLiteMode" style="width: auto; margin-right: 10px;">
+                    <label for="settingLiteMode"
+                        style="font-weight: bold; color: var(--wa-text-primary); cursor: pointer;">Lite Mode (Fast /
+                        Lower Quota Usage)</label>
+                </div>
+
+                <div id="modelContainer" style="margin-bottom: 20px;">
+                    <label
+                        style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Gemini
+                        Model</label>
+                    <select id="settingGeminiModel" class="setting-input">
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Standard)</option>
+                        <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended)</option>
+                        <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Fast)</option>
+                        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (Ultra Lite)</option>
+                    </select>
+                    <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Choose the AI model
+                        to use for summaries and responses.</div>
+                </div>
+
+                <h3
+                    style="color: var(--wa-header-bg); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px;">
+                    Integrations</h3>
+
+                <div style="margin-bottom: 20px;">
+                    <label
+                        style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">External
+                        API URL (Message Forwarding)</label>
+                    <input type="url" id="settingWebhook" class="setting-input"
+                        placeholder="https://api.example.com/webhook">
+                    <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">Incoming
+                        messages will be POSTed to this URL as JSON. Leave empty to disable.</div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label
+                        style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--wa-text-primary);">Daily
+                        Report Prompt</label>
+                    <textarea id="settingReportPrompt" class="setting-input" style="height: 100px; resize: vertical;"
+                        placeholder="Summarize the day's conversations, highlighting important tasks and follow-ups."></textarea>
+                    <div style="font-size: 12px; color: var(--wa-text-secondary); margin-top: 4px;">The AI prompt
+                        used to generate your daily status report. Supports Hebrew and English.</div>
+                </div>
+
+                <div style="text-align: right; margin-top: 30px;">
+                    <button onclick="saveSettings()" id="saveBtn"
+                        style="background-color: var(--wa-outgoing-bg); color: #000; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold;">Save
+                        Settings</button>
+                </div>
+
+                <div id="statusMessage" style="margin-top: 15px; text-align: center; display: none;"></div>
             </div>
         </div>
+    </div>
     </div>
 
     <style>

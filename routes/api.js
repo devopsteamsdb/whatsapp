@@ -3,9 +3,11 @@ const router = express.Router();
 const whatsappService = require('../services/whatsapp');
 const webhookService = require('../services/webhook');
 const conversationMemory = require('../services/conversationMemory');
+const dbService = require('../services/db');
 const fs = require('fs');
 const path = require('path');
 const ENV_FILE = path.join(__dirname, '..', '.env');
+const geminiService = require('../services/gemini');
 
 // Start session and initialize WhatsApp client
 router.post('/session/start', (req, res) => {
@@ -252,14 +254,17 @@ router.put('/webhook', (req, res) => {
 
 // Get all chats
 router.get('/chats', async (req, res) => {
+    console.log('[API] GET /chats called');
     try {
         const chats = await whatsappService.getChats();
+        console.log(`[API] Returning ${chats.length} chats`);
         res.json({
             success: true,
             count: chats.length,
             chats: chats
         });
     } catch (error) {
+        console.error('[API] Error in GET /chats:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -271,11 +276,13 @@ router.get('/chats', async (req, res) => {
 router.get('/messages/:phone', async (req, res) => {
     const { phone } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit) : 50;
+    console.log(`[API] GET /messages/${phone} called (limit: ${limit})`);
 
     try {
         // Pass the phone/id directly to the service without stripping formatting
         // The service now handles ID validation
         const history = await whatsappService.getChatHistory(phone, limit);
+        console.log(`[API] Returning ${history.length} messages for ${phone}`);
 
         res.json({
             success: true,
@@ -283,6 +290,7 @@ router.get('/messages/:phone', async (req, res) => {
             messages: history
         });
     } catch (error) {
+        console.error(`[API] Error in GET /messages/${phone}:`, error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -352,9 +360,44 @@ router.get('/health', (req, res) => {
     }
 });
 
+// Gemini available models endpoint
+router.get('/gemini/models', async (req, res) => {
+    try {
+        const models = await geminiService.listAvailableModels();
+        res.json({
+            success: true,
+            models: models
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Database inspection endpoint
+router.get('/db/inspect', async (req, res) => {
+    console.log('[API] GET /db/inspect called');
+    try {
+        const messages = await dbService.query('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 100');
+        res.json({
+            success: true,
+            count: messages.length,
+            messages: messages
+        });
+    } catch (error) {
+        console.error('[API] Error in GET /db/inspect:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 router.post('/settings', (req, res) => {
     try {
-        const { PORT, SESSION_PATH, GEMINI_API_KEY, EXTERNAL_API_URL, DAILY_REPORT_PROMPT } = req.body;
+        const { PORT, SESSION_PATH, GEMINI_API_KEY, GEMINI_MODEL, EXTERNAL_API_URL, DAILY_REPORT_PROMPT } = req.body;
 
         let envContent = '';
         if (fs.existsSync(ENV_FILE)) {
@@ -365,6 +408,7 @@ router.post('/settings', (req, res) => {
             PORT: PORT,
             SESSION_PATH: SESSION_PATH,
             GEMINI_API_KEY: GEMINI_API_KEY,
+            GEMINI_MODEL: GEMINI_MODEL,
             EXTERNAL_API_URL: EXTERNAL_API_URL,
             DAILY_REPORT_PROMPT: DAILY_REPORT_PROMPT
         };
