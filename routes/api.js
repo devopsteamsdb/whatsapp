@@ -328,8 +328,10 @@ router.get('/settings', (req, res) => {
                 PORT: settings.PORT,
                 SESSION_PATH: settings.SESSION_PATH,
                 GEMINI_API_KEY: settings.GEMINI_API_KEY || '',
+                GEMINI_MODEL: settings.GEMINI_MODEL || 'gemini-1.5-flash',
                 EXTERNAL_API_URL: settings.EXTERNAL_API_URL,
-                DAILY_REPORT_PROMPT: settings.DAILY_REPORT_PROMPT || ''
+                DAILY_REPORT_PROMPT: settings.DAILY_REPORT_PROMPT,
+                DARK_MODE: settings.DARK_MODE
             }
         });
     } catch (error) {
@@ -397,7 +399,7 @@ router.get('/db/inspect', async (req, res) => {
 
 router.post('/settings', (req, res) => {
     try {
-        const { PORT, SESSION_PATH, GEMINI_API_KEY, GEMINI_MODEL, EXTERNAL_API_URL, DAILY_REPORT_PROMPT } = req.body;
+        const { PORT, SESSION_PATH, GEMINI_API_KEY, GEMINI_MODEL, EXTERNAL_API_URL, DAILY_REPORT_PROMPT, DARK_MODE } = req.body;
 
         let envContent = '';
         if (fs.existsSync(ENV_FILE)) {
@@ -410,7 +412,8 @@ router.post('/settings', (req, res) => {
             GEMINI_API_KEY: GEMINI_API_KEY,
             GEMINI_MODEL: GEMINI_MODEL,
             EXTERNAL_API_URL: EXTERNAL_API_URL,
-            DAILY_REPORT_PROMPT: DAILY_REPORT_PROMPT
+            DAILY_REPORT_PROMPT: DAILY_REPORT_PROMPT,
+            DARK_MODE: DARK_MODE
         };
 
         // Update or append
@@ -432,6 +435,10 @@ router.post('/settings', (req, res) => {
 
         // Update runtime env for immediate effect where possible (PORT requires restart)
         if (EXTERNAL_API_URL !== undefined) process.env.EXTERNAL_API_URL = EXTERNAL_API_URL;
+
+        // Update Gemini service immediately
+        const geminiService = require('../services/gemini');
+        geminiService.updateConfig(GEMINI_API_KEY, GEMINI_MODEL);
 
         res.json({
             success: true,

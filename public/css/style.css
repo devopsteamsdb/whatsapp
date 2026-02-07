@@ -14,6 +14,21 @@
     --error-color: #ff4757;
     --success-color: #25d366;
     --warning-color: #ffa502;
+    --nav-bg: rgba(21, 25, 50, 0.8);
+}
+
+/* Light Mode Overrides */
+body.light-mode {
+    --bg-primary: #f0f2f5;
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --text-primary: #111b21;
+    --text-secondary: #667781;
+    --border-color: #e9edef;
+    --nav-bg: #f0f2f5;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 * {
@@ -33,8 +48,13 @@ body {
     min-height: 100vh;
 }
 
+body.light-mode {
+    background-image: none;
+}
+
 .container {
-    max-width: 1400px;
+    max-width: 100%;
+    /* Full page */
     margin: 0 auto;
     padding: 2rem;
 }
@@ -649,7 +669,7 @@ body {
 
 .nav-bar {
     width: 60px;
-    background: var(--bg-card);
+    background: var(--nav-bg);
     display: flex;
     flex-direction: column;
     align-items: center;

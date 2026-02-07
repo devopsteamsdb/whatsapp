@@ -1,4 +1,19 @@
 :root {
+    /* Dark Mode (Default for premium and replica) */
+    --wa-header-bg: #202c33;
+    --wa-bg: #0b141a;
+    --wa-sidebar-bg: #111b21;
+    --wa-chat-bg: #0b141a;
+    --wa-incoming-msg: #202c33;
+    --wa-outgoing-msg: #005c4b;
+    --wa-text-primary: #e9edef;
+    --wa-text-secondary: #8696a0;
+    --wa-border: #222d34;
+    --wa-input-bg: #2a3942;
+    --wa-green: #00a884;
+}
+
+body.light-mode {
     --wa-header-bg: #00a884;
     --wa-bg: #d1d7db;
     --wa-sidebar-bg: #ffffff;
@@ -27,7 +42,7 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     background-color: #fff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Navigation Bar (Custom addition) */
@@ -55,7 +70,8 @@ body {
     text-decoration: none;
 }
 
-.nav-item:hover, .nav-item.active {
+.nav-item:hover,
+.nav-item.active {
     background-color: #dce1e6;
     color: var(--wa-header-bg);
 }
@@ -254,7 +270,7 @@ body {
     font-size: 14.2px;
     line-height: 19px;
     color: var(--wa-text-primary);
-    box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
 }
 
 .message-bubble.outgoing {
@@ -347,7 +363,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
     align-items: center;

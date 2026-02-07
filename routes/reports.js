@@ -10,10 +10,11 @@ const ENV_FILE = path.join(__dirname, '..', '.env');
 
 // Get daily report for a specific date
 router.get('/daily', async (req, res) => {
-    const date = req.query.date || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const date = req.query.date || new Date().toISOString().split('T')[0];
+    const useAI = req.query.useAI === 'true';
 
     try {
-        console.log(`Generating daily report for ${date}...`);
+        console.log(`Generating daily report for ${date} (AI: ${useAI})...`);
 
         let messages = [];
         let source = 'database';
@@ -41,7 +42,6 @@ router.get('/daily', async (req, res) => {
                 const allMessages = [];
 
                 for (const chat of chats) {
-                    // Only check chats with recent activity
                     if (chat.timestamp < startTs) continue;
 
                     const msgs = await chat.fetchMessages({ limit: 50 });
@@ -59,7 +59,7 @@ router.get('/daily', async (req, res) => {
                         }
                     }
                 }
-                messages = allMessages;
+                messages = allMessages.sort((a, b) => a.timestamp - b.timestamp);
                 console.log(`[Reports] Fetched ${messages.length} real-time messages for today.`);
             } catch (syncError) {
                 console.error('[Reports] Real-time fetch failed, falling back to DB:', syncError);
@@ -67,7 +67,6 @@ router.get('/daily', async (req, res) => {
                 source = 'database (fallback)';
             }
         } else {
-            // Historical report from DB
             messages = await dbService.getMessagesForDay(date);
             if (messages.length === 0) {
                 console.log(`[Reports] No messages found in DB for ${date}. Attempting sync...`);
@@ -82,52 +81,39 @@ router.get('/daily', async (req, res) => {
                 date: date,
                 source: source,
                 summary: 'No messages found for this day.',
-                count: 0
+                count: 0,
+                messages: []
             });
         }
 
-        // 2. Get custom prompt from .env
-        let customPrompt = process.env.DAILY_REPORT_PROMPT;
-        if (!customPrompt && fs.existsSync(ENV_FILE)) {
-            const envContent = fs.readFileSync(ENV_FILE, 'utf8');
-            const match = envContent.match(/DAILY_REPORT_PROMPT=(.*)/);
-            if (match) customPrompt = match[1].trim();
-        }
-
-        // 3. Send to Gemini for summary (if available)
         let summary = null;
-        if (geminiService.isAvailable()) {
-            summary = await geminiService.summarizeConversation(messages, customPrompt);
-        }
 
-        // 4. Fallback if Gemini is not available or failed
-        if (!summary) {
-            console.log('[Reports] Gemini summary unavailable or failed, generating basic summary...');
-            // Basic fallback summary
-            const senderCounts = {};
-            messages.forEach(m => {
-                const name = m.sender_name || 'Unknown';
-                senderCounts[name] = (senderCounts[name] || 0) + 1;
-            });
+        if (useAI) {
+            // Get custom prompt from .env
+            let customPrompt = process.env.DAILY_REPORT_PROMPT;
+            if (!customPrompt && fs.existsSync(ENV_FILE)) {
+                const envContent = fs.readFileSync(ENV_FILE, 'utf8');
+                const match = envContent.match(/DAILY_REPORT_PROMPT=(.*)/);
+                if (match) customPrompt = match[1].trim();
+            }
 
-            const summaryLines = [
-                '🤖 **AI Reporting (Gemini) is not active or encountered an error.**',
-                '',
-                '📊 **Basic Activity Summary:**',
-                `- Total Messages: ${messages.length}`,
-                '',
-                '👥 **Top Contributors:**'
-            ];
+            // Bring in Gemini for summary
+            if (geminiService.isAvailable()) {
+                summary = await geminiService.summarizeConversation(messages, customPrompt);
+            }
 
-            Object.entries(senderCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .forEach(([name, count]) => {
-                    summaryLines.push(`- ${name}: ${count} messages`);
-                });
-
-            summaryLines.push('', '💡 *Note: If you configured an API key, check the server logs for specific Gemini errors.*');
-            summary = summaryLines.join('\n');
+            // Fallback if Gemini failed
+            if (!summary) {
+                const summaryLines = [
+                    '🤖 **AI Reporting (Gemini) encountered an error.**',
+                    '',
+                    '📊 **Basic Activity Summary:**',
+                    `- Total Messages: ${messages.length}`,
+                    '',
+                    '💡 *Note: Using raw message dump instead.*'
+                ];
+                summary = summaryLines.join('\n');
+            }
         }
 
         res.json({

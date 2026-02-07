@@ -10,21 +10,20 @@ async function loadSettings() {
         if (data.success) {
             document.getElementById('settingPort').value = data.settings.PORT || '';
             document.getElementById('settingSession').value = data.settings.SESSION_PATH || '';
-            document.getElementById('settingGeminiKey').value = data.settings.GEMINI_API_KEY || '';
+            document.getElementById('settingGeminiApiKey').value = data.settings.GEMINI_API_KEY || '';
+            document.getElementById('settingDarkMode').checked = data.settings.DARK_MODE !== 'false';
 
             const model = data.settings.GEMINI_MODEL || 'gemini-1.5-flash';
             document.getElementById('settingGeminiModel').value = model;
-            document.getElementById('settingLiteMode').checked = model.includes('lite');
-
-            // Toggle visibility of model selector based on lite mode
-            toggleModelSelector();
 
             document.getElementById('settingWebhook').value = data.settings.EXTERNAL_API_URL || '';
             document.getElementById('settingReportPrompt').value = data.settings.DAILY_REPORT_PROMPT || '';
 
-            // Populate models if key exists
-            if (data.settings.GEMINI_API_KEY) {
-                fetchModels(data.settings.GEMINI_MODEL);
+            // Apply theme live
+            if (data.settings.DARK_MODE === 'false') {
+                document.body.classList.add('light-mode');
+            } else {
+                document.body.classList.remove('light-mode');
             }
         }
     } catch (error) {
@@ -36,15 +35,15 @@ async function loadSettings() {
 async function saveSettings() {
     const port = document.getElementById('settingPort').value;
     const session = document.getElementById('settingSession').value;
-    const geminiKey = document.getElementById('settingGeminiKey').value;
-    const isLite = document.getElementById('settingLiteMode').checked;
-    const geminiModel = isLite ? 'gemini-2.5-flash-lite' : document.getElementById('settingGeminiModel').value;
+    const geminiKey = document.getElementById('settingGeminiApiKey').value;
+    const geminiModel = document.getElementById('settingGeminiModel').value;
     const webhook = document.getElementById('settingWebhook').value;
     const reportPrompt = document.getElementById('settingReportPrompt').value;
+    const darkMode = document.getElementById('settingDarkMode').checked;
     const btn = document.getElementById('saveBtn');
 
     btn.disabled = true;
-    btn.innerText = 'Saving...';
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Saving...';
 
     try {
         const response = await fetch('/api/settings', {
@@ -58,7 +57,8 @@ async function saveSettings() {
                 GEMINI_API_KEY: geminiKey,
                 GEMINI_MODEL: geminiModel,
                 EXTERNAL_API_URL: webhook,
-                DAILY_REPORT_PROMPT: reportPrompt
+                DAILY_REPORT_PROMPT: reportPrompt,
+                DARK_MODE: darkMode.toString()
             })
         });
 
@@ -66,6 +66,7 @@ async function saveSettings() {
 
         if (data.success) {
             showStatus(data.message || 'Settings saved successfully', 'success');
+            localStorage.setItem('DARK_MODE', darkMode.toString());
         } else {
             showStatus('Error saving settings: ' + data.error, 'error');
         }
@@ -74,9 +75,18 @@ async function saveSettings() {
         showStatus('Failed to save settings', 'error');
     } finally {
         btn.disabled = false;
-        btn.innerText = 'Save Settings';
+        btn.innerHTML = '<i class="fas fa-save"></i> Save Settings';
     }
 }
+
+// Add live theme toggle
+document.getElementById('settingDarkMode').addEventListener('change', (e) => {
+    if (e.target.checked) {
+        document.body.classList.remove('light-mode');
+    } else {
+        document.body.classList.add('light-mode');
+    }
+});
 
 function showStatus(message, type) {
     const statusEl = document.getElementById('statusMessage');
@@ -98,43 +108,4 @@ function showStatus(message, type) {
     setTimeout(() => {
         statusEl.style.display = 'none';
     }, 5000);
-}
-async function fetchModels(currentModel) {
-    try {
-        const response = await fetch('/api/gemini/models');
-        const data = await response.json();
-
-        if (data.success && data.models.length > 0) {
-            const select = document.getElementById('settingGeminiModel');
-            // Keep current selection if not in list
-            const options = data.models.map(m =>
-                `<option value="${m.name}" ${m.name === currentModel ? 'selected' : ''}>${m.displayName || m.name}</option>`
-            );
-            select.innerHTML = options.join('');
-
-            // Handle lite model selection logic if needed
-            if (document.getElementById('settingLiteMode').checked && !currentModel.includes('lite')) {
-                // Find a lite model if one exists
-                const lite = data.models.find(m => m.name.includes('lite'))?.name;
-                if (lite) select.value = lite;
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching models:', error);
-    }
-}
-
-function toggleModelSelector() {
-    const isLite = document.getElementById('settingLiteMode').checked;
-    const container = document.getElementById('modelContainer');
-    if (container) {
-        container.style.opacity = isLite ? '0.5' : '1';
-        container.style.pointerEvents = isLite ? 'none' : 'auto';
-    }
-}
-
-// Add event listener for lite mode toggle
-const liteModeEl = document.getElementById('settingLiteMode');
-if (liteModeEl) {
-    liteModeEl.addEventListener('change', toggleModelSelector);
 }

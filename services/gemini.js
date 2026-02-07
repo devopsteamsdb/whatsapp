@@ -2,17 +2,21 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 class GeminiService {
     constructor() {
-        this.apiKey = process.env.GEMINI_API_KEY;
-        this.modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-        this.genAI = null;
-        this.model = null;
+        this.updateConfig(process.env.GEMINI_API_KEY, process.env.GEMINI_MODEL);
+    }
+
+    updateConfig(apiKey, modelName) {
+        this.apiKey = apiKey || this.apiKey;
+        this.modelName = modelName || this.modelName || 'gemini-1.5-flash';
 
         if (this.apiKey) {
             this.genAI = new GoogleGenerativeAI(this.apiKey);
             this.model = this.genAI.getGenerativeModel({ model: this.modelName });
-            console.log(`Gemini AI service initialized with model: ${this.modelName}`);
+            console.log(`Gemini AI service configured with model: ${this.modelName}`);
         } else {
-            console.log('Gemini API key not found. AI responses will be disabled.');
+            console.log('Gemini API key not found. AI operations will be limited.');
+            this.genAI = null;
+            this.model = null;
         }
     }
 
