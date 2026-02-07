@@ -1,7 +1,16 @@
+console.log(`[Server] Current directory: ${process.cwd()}`);
+console.log(`[Server] __dirname: ${__dirname}`);
+const fs = require('fs');
+const path = require('path');
+const dotenvPath = path.join(process.cwd(), '.env');
+if (fs.existsSync(dotenvPath)) {
+    console.log(`[Server] Found .env file at: ${dotenvPath}`);
+} else {
+    console.warn(`[Server] .env file NOT FOUND at: ${dotenvPath}`);
+}
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const apiRoutes = require('./routes/api');
 const reportsRoutes = require('./routes/reports');
 const whatsappService = require('./services/whatsapp');

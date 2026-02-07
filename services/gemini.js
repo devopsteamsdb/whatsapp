@@ -10,11 +10,14 @@ class GeminiService {
         this.modelName = modelName || this.modelName || 'gemini-1.5-flash';
 
         if (this.apiKey) {
+            const redacted = this.apiKey.substring(0, 8) + '...' + this.apiKey.substring(this.apiKey.length - 4);
+            console.log(`[Gemini] Configuring with API Key: ${redacted}`);
             this.genAI = new GoogleGenerativeAI(this.apiKey);
             this.model = this.genAI.getGenerativeModel({ model: this.modelName });
-            console.log(`Gemini AI service configured with model: ${this.modelName}`);
+            console.log(`[Gemini] AI service configured with model: ${this.modelName}`);
         } else {
-            console.log('Gemini API key not found. AI operations will be limited.');
+            console.warn('[Gemini] CRITICAL: Gemini API key NOT FOUND in environment (process.env.GEMINI_API_KEY)');
+            console.log('[Gemini] AI operations will be limited. Static responses only.');
             this.genAI = null;
             this.model = null;
         }

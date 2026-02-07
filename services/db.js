@@ -11,11 +11,14 @@ try {
         console.log(`[DB] Creating data directory: ${DATA_DIR}`);
         fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o755 });
     } else {
-        // Double check permissions if it exists
+        const stats = fs.statSync(DATA_DIR);
+        console.log(`[DB] Data directory exists: ${DATA_DIR} (Mode: ${stats.mode.toString(8)})`);
         try {
             fs.accessSync(DATA_DIR, fs.constants.W_OK);
+            console.log(`[DB] Data directory is writable.`);
         } catch (e) {
-            console.warn(`[DB] WARNING: Data directory may not be writable: ${DATA_DIR}`);
+            console.error(`[DB] CRITICAL: Data directory is NOT WRITABLE: ${DATA_DIR}`);
+            console.error(`[DB] HINT: If using Docker, check 'chown' and volume permissions.`);
         }
     }
 } catch (dirErr) {
