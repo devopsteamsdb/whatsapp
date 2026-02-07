@@ -61,37 +61,24 @@ class WhatsAppService {
             if (!fs.existsSync(dataPath)) return;
 
             const locks = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'];
-
-            // Specifically target known lock locations
-            const knownPaths = [
-                path.join(dataPath, 'SingletonLock'),
-                path.join(dataPath, 'Default', 'SingletonLock'),
-                path.join(dataPath, 'SingletonSocket'),
-                path.join(dataPath, 'Default', 'SingletonSocket')
-            ];
-
-            for (const lockPath of knownPaths) {
-                if (fs.existsSync(lockPath)) {
-                    console.log(`[WhatsApp] Removing targeted lock file: ${lockPath}`);
-                    try {
-                        fs.unlinkSync(lockPath);
-                    } catch (e) {
-                        console.warn(`[WhatsApp] Failed to remove lock ${lockPath}: ${e.message}`);
-                    }
-                }
-            }
-
-            // Also do a generic shallow scan of the dataPath
             const items = fs.readdirSync(dataPath, { withFileTypes: true });
+
             for (const item of items) {
-                if (locks.some(lock => item.name.includes(lock))) {
-                    const fullPath = path.join(dataPath, item.name);
-                    console.log(`[WhatsApp] Removing discovered lock: ${fullPath}`);
-                    try {
-                        fs.unlinkSync(fullPath);
-                    } catch (e) {
-                        if (e.code !== 'ENOENT') {
-                            console.warn(`[WhatsApp] Failed to remove lock ${fullPath}: ${e.message}`);
+                const fullPath = path.join(dataPath, item.name);
+
+                if (item.isDirectory()) {
+                    // Recursive call to handle subdirectories (like session/Default)
+                    await this.clearPuppeteerLocks(fullPath);
+                } else if (item.isFile() || item.isSymbolicLink()) {
+                    if (locks.some(lock => item.name.includes(lock))) {
+                        console.log(`[WhatsApp] Removing stale lock file: ${fullPath}`);
+                        try {
+                            fs.unlinkSync(fullPath);
+                        } catch (e) {
+                            // Ignore errors if file is already gone
+                            if (e.code !== 'ENOENT') {
+                                console.warn(`[WhatsApp] Failed to remove lock ${fullPath}: ${e.message}`);
+                            }
                         }
                     }
                 }
