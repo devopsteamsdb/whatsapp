@@ -2,20 +2,35 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const DATA_DIR = path.resolve(__dirname, '..', 'data');
 const DB_PATH = path.join(DATA_DIR, 'whatsapp.db');
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+// Ensure data directory exists with more robust error handling
+try {
+    if (!fs.existsSync(DATA_DIR)) {
+        console.log(`[DB] Creating data directory: ${DATA_DIR}`);
+        fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o755 });
+    } else {
+        // Double check permissions if it exists
+        try {
+            fs.accessSync(DATA_DIR, fs.constants.W_OK);
+        } catch (e) {
+            console.warn(`[DB] WARNING: Data directory may not be writable: ${DATA_DIR}`);
+        }
+    }
+} catch (dirErr) {
+    console.error(`[DB] CRITICAL: Failed to handle data directory:`, dirErr);
 }
 
 class DatabaseService {
     constructor() {
         console.log(`[DB] Attempting to open database at: ${DB_PATH}`);
-        this.db = new sqlite3.Database(DB_PATH, (err) => {
+        this.db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
             if (err) {
                 console.error('[DB] CRITICAL: Error opening database:', err);
+                if (err.code === 'SQLITE_CANTOPEN') {
+                    console.error('[DB] HINT: Check folder permissions or volume mount points in Docker.');
+                }
             } else {
                 console.log('[DB] Connected to SQLite database successfully');
                 this.initSchema();

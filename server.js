@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`WhatsappAPI server running on http://localhost:${PORT}`);
     console.log('Ready to accept connections...');
 
@@ -35,3 +35,33 @@ app.listen(PORT, () => {
     console.log('Auto-initializing WhatsApp session...');
     whatsappService.initialize();
 });
+
+// Graceful shutdown handling
+const handleShutdown = async (signal) => {
+    console.log(`\n[Server] ${signal} received. Starting graceful shutdown...`);
+
+    try {
+        // 1. Stop accepting new requests
+        server.close();
+
+        // 2. Logout/Destroy WhatsApp client
+        if (whatsappService.client) {
+            console.log('[Server] Closing WhatsApp client...');
+            await whatsappService.logout();
+        }
+
+        // 3. Close database connection
+        const dbService = require('./services/db');
+        console.log('[Server] Closing database connection...');
+        dbService.close();
+
+        console.log('[Server] Shutdown complete. Goodbye!');
+        process.exit(0);
+    } catch (err) {
+        console.error('[Server] Error during shutdown:', err);
+        process.exit(1);
+    }
+};
+
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));

@@ -55,16 +55,55 @@ class WhatsAppService {
         }
     }
 
-    initialize() {
+    async clearPuppeteerLocks(dataPath) {
+        console.log(`[WhatsApp] Checking for stale Chromium locks in: ${dataPath}`);
+        try {
+            if (!fs.existsSync(dataPath)) return;
+
+            const locks = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'];
+            const items = fs.readdirSync(dataPath, { withFileTypes: true });
+
+            for (const item of items) {
+                const fullPath = path.join(dataPath, item.name);
+
+                if (item.isDirectory()) {
+                    await this.clearPuppeteerLocks(fullPath);
+                } else if (item.isFile() || item.isSymbolicLink()) {
+                    if (locks.some(lock => item.name.includes(lock))) {
+                        console.log(`[WhatsApp] Removing stale lock file: ${fullPath}`);
+                        try {
+                            fs.unlinkSync(fullPath);
+                        } catch (e) {
+                            // Ignore errors if file is already gone
+                            if (e.code !== 'ENOENT') {
+                                console.warn(`[WhatsApp] Failed to remove lock ${fullPath}: ${e.message}`);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            if (err.code !== 'ENOENT') {
+                console.error('[WhatsApp] Error clearing Puppeteer locks:', err);
+            }
+        }
+    }
+
+    async initialize() {
         if (this.client) {
             console.log('[WhatsApp] Client already initialized');
             return;
         }
 
+        const authPath = path.join(__dirname, '..', '.wwebjs_auth');
+
+        // CRITICAL for Docker/Restart stability: Clear Chromium locks
+        await this.clearPuppeteerLocks(authPath);
+
         console.log('[WhatsApp] Creating new client instance...');
         this.client = new Client({
             authStrategy: new LocalAuth({
-                dataPath: path.join(__dirname, '..', '.wwebjs_auth')
+                dataPath: authPath
             }),
             puppeteer: {
                 headless: true,
